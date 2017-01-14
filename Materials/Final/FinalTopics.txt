@@ -1,0 +1,91 @@
+Final Exam Details:
+
+- Monday, December 5th 2016
+- 3:00pm-6:00pm (3 hours)
+- Boelter 3760 (our regular room)
+- Open book and open notes (no electronic devices)
+- 20 pts T/F + MC
+- Write code (bash/python scripts, C programs, etc.)
+
+Week 1:
+- the basics of the Linux OS (permissions (symbolic/numeric), links, environment variables, etc.)
+- absolute vs. relative paths
+- basic system utilities (pwd, cd, mv, cp, rm, ls, wc, echo, touch, etc.)
+                         (mkdir, rmdir, cat, ln, find (-type, -perm, -user, -atime,
+                         -mtime, -name, -maxdepth), chmod, kill, ps, whereis, whatis)
+- assignment 1
+
+Week 2:
+- standard streams
+- I/O redirection (to stdin, stdout, stderr), pipelines
+- text processing tools (sec, tr, grep (grep, egrep, fgrep), etc.)
+- basic REGEX (regular and extended)
+- You should be comfortable writing bash scripts
+  ~ for/while loops, if-else
+  ~ declaring/referencing variables, env vars
+  ~ built-in vras (#, ? IFS, 1, 2, etc.)
+  ~ quotes (single vs. double vs. back ticks)
+
+Week 3:
+- C compilation process (source code -> preprocessor -> compiler -> assembler -> linker)
+- makefiles (structure, how does make work) and build process (configure, make, make install)
+- python scripting? (defining classes, member/helper functions, vars, constructs, indentation, check number of args, lists and list operations)
+- diff, patching
+  ~ Applying patches: unified diff format, pnum option
+    diff -u file1 file2 > patch_file
+    --- /usr/local/bin/file1
+    +++ /usr/local/bin/file2
+    @@ -l,s +l,s @@ hunk, l,s lines the change applies to in from/to lines
+    If local, which num do you use? patch -pnum < patch_file
+- assignment 3
+- You should be comfortable writing basic Makefiles, patches, etc.
+
+Week 4:
+- source revision control
+- centralized vs distributed
+- git architecture (tree, commit, tag)
+- 2 ways to create version controlled project (git init, git clone)
+- git terminology and concepts, git commands (commit, checkout, branch)
+- why git add then git commit
+- git branch is a pointer to a commit object
+  ~ default branch is Master, moves each time a commit is added
+
+Week 5:
+- process memory
+- C programming (basic datatypes, control flow, pointers, structs, dynamic memory, basic I/O)
+  ~ function pointers, qsort, file I/O, memory allocation
+- basic debugging (GDB)
+  ~ run with $ gdb <executable>, (gdb) run <args>
+  ~ debugging commands: (break, bt, watch, c/n/s, break file:line, bt (stack frames))
+
+Week 6:
+- system calls (disadvantages)
+- library calls vs system calls (getchar/putchar vs read/write)
+- dual-mode operation (user mode, kernel mode = protection mechanism)
+- buffered vs. unbuffered I/O
+- assignment 6
+
+Week 7:
+- multitasking, multithreading (advantages/disadvantages)
+- thread vs. process
+- process memory layout
+- race conditions, atomicity, thread synchronization methods
+- pthread library (pthread_create, pthread_join)
+- assignment 7
+
+Week 8:
+- linking process, what does it do
+- static linking, dynamic linking (advantages/disadvantages)
+- how to create a static library vs. shared library
+- dynamic linking vs. dynamic loading
+- function attributes
+- dl api (dlopen, dlsym, dlerror, dlclose)
+
+Week 9:
+- SSH protocol steps
+- how does SSH guarantee confidentiality/authentication
+- symmetric, asymmetric cryptography
+- encryption, digital signatures (and data integrity)
+- conceptual understanding of internet communication desired guarantees
+- certificate authority (digital certificates), host/client authentication (keyed and keyless)
+
