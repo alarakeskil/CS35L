@@ -1,0 +1,303 @@
+Assignment 5: C Programming and Debugging - lab5.txt
+--------------------------------------------------------------------------------
+
+Download the old version of coreutils with wget and untar it. Attempt to make
+coreutils with flags set for using the GDB debugger. This can be achieved with
+the following ./configure flags.
+
+$ wget http://web.cs.ucla.edu/classes/fall16/cs35L/assign/coreutils-with-bug.tar.gz
+$ tar -xzf coreutils-with-bug.tar.gz
+$ cd coreutils-with-bug
+$ ./configure CFLAGS="-g -O0"
+$ make
+
+When attempting to make coreutils, there was the following error:
+
+In file included from utimecmp.c:41:0:
+utimens.h:2:5: error: conflicting types for 'futimens'
+ int futimens (int, char const *, struct timespec const [2]);
+     ^
+In file included from utimecmp.h:25:0,
+                 from utimecmp.c:25:
+/usr/include/sys/stat.h:373:12: note: previous declaration of 'futimens' was here
+ extern int futimens (int __fd, const struct timespec __times[2]) __THROW;
+            ^
+make[3]: *** [utimecmp.o] Error 1
+make[3]: Leaving directory `/w/home.09/cs/ugrad/wijaya/5Asgn/coreutils-with-bug/lib'
+make[2]: *** [all] Error 2
+make[2]: Leaving directory `/w/home.09/cs/ugrad/wijaya/5Asgn/coreutils-with-bug/lib'
+make[1]: *** [all-recursive] Error 1
+make[1]: Leaving directory `/w/home.09/cs/ugrad/wijaya/5Asgn/coreutils-with-bug'
+make: *** [all] Error 2
+
+This error is a runtime error where the program does not compile/make correctly.
+The errors were caused by conflicting data types for "futimens" as displayed in
+the error message above. In order to resolve this error so coreutils can build,
+we downloaded the patch supplied with wget and then applied the patch.
+
+$ wget http://web.cs.ucla.edu/classes/fall16/cs35L/assign/coreutils.diff
+$ cp coreutils.diff patch_file
+$ patch -p0 < patch_file
+
+The output from applying the patch is as follows, showing that 5 files were
+modified by the patch:
+
+patching file lib/utimens.c
+patching file lib/utimens.h
+patching file src/copy.c
+patching file src/tee.c
+patching file src/touch.c
+
+The patch resolved the errors because it renamed futimens to coreutils_futimens
+and tee to coreutils_tee. This resolved the type conflicts for functions of the
+same name by renaming the functions.
+
+The program was then rebuilt with the make command:
+
+$ make
+
+In order to test the bug and reproduce it, I carried out the supplied testing
+steps as shown:
+
+$ tmp=$(mktemp -d)
+$ cd $tmp
+$ touch -d '1918-11-11 11:00 GMT' wwi-armistice
+$ touch now
+$ sleep 1
+$ touch now1
+$ TZ=UTC0 ~/coreutils-with-bug/src/ls -lt --full-time wwi-armistice now now1
+-rw-r--r-- 1 wijaya csugrad 0 1918-11-11 11:00:00.000000000 +0000 wwi-armistice
+-rw-r--r-- 1 wijaya csugrad 0 2016-10-24 22:19:11.781767018 +0000 now1
+-rw-r--r-- 1 wijaya csugrad 0 2016-10-24 22:19:10.779741204 +0000 now
+
+My output for the test is shown above and properly demonstrates the bug where
+the newest file is on top rather than on the bottom. I then used the GDB
+debugger to try to find the cause of the bug.
+
+$ cp ~/coreutils-with-bug/src/ls .
+$ gdb ./ls
+
+Now that I am within the GDB debugger, I tested that I could run the ls -lt
+command. I then looked at all the functions to see which would be relevant. Due
+to the nature of the bug, I assumed anything related to comparing times or
+sorting could be the root of the error. For the rest of this lab5.txt, I
+repeatedly stopped the debugger and restarted it to test new breakpoints. I will
+not detail the repeating ls -lt calls but assume they come after every new
+breakpoint or wherever necessary.
+
+(gdb) run -lt wwi-armistice now now1
+(gdb) info functions
+
+Potential relevant functions:
+
+static int cmp_atime(const struct fileinfo *, const struct fileinfo *, int (*)(const char *, const char *));
+static int cmp_ctime(const struct fileinfo *, const struct fileinfo *, int (*)(const char *, const char *));
+static int cmp_mtime(const struct fileinfo *, const struct fileinfo *, int (*)(const char *, const char *));
+static int compare_atime(V, V);
+static int compare_ctime(V, V);
+static int compare_mtime(V, V);
+static void sort_files(void);
+
+I then placed a breakpoint at the function sort_files and used the gdb list
+command to look at the source code.
+
+(gdb) break sort_files
+(gdb) list sort_files
+(gdb) list 2962, 3035
+
+I could then see that sort_files used the potentially relevant functions ctime,
+mtime, and atime. With the breakpoint at sort_lines, I ran the command ls -lt
+and stepped through the program with s after it hit the breakpoint.
+
+(gdb) run -lt wwi-armistice now now1
+(gdb) s                                   //as many times as necessary
+
+I could see that the first case the switch statement in sort_files hit was
+time_mtime. I looked at local variables and saw that the variable func was set
+by the following statement:
+
+func = sort_reverse ? rev_cmp_mtime : compare_mtime;
+
+I then used list to see the source code of rev_cmp_mtime, compare_mtime, and
+cmp_mtime.
+
+(gdb) info locals
+(gdb) list rev_cmp_mtime
+(gdb) list compare_mtime
+(gdb) list cmp_mtime
+
+The most relevant function seemed to be cmp_mtime, which actually returned
+something rather than just calling other functions (usually cmp_mtime in the
+end). The list for cmp_mtime is as follows:
+
+2876  static inline int
+2877  cmp_mtime (struct fileinfo const *a, struct fileinfo const *b,
+2878       int (*cmp) (char const *, char const *))
+2879  {
+2880    int diff = timespec_cmp (get_stat_mtime (&b->stat),
+2881           get_stat_mtime (&a->stat));
+2882    return diff ? diff : cmp (a->name, b->name);
+2883  }
+
+The function seems to set the int diff variable. I set a breakpoint at the
+function and used info locals to get information on the local variables.
+
+(gdb) break cmp_mtime
+(gdb) info locals
+
+Nothing too important or weird seemed to be happening, so I went even further
+and listed timespec_cmp to see the source code. This looked to be all code, no
+calls to a separate function to carry out a task.
+
+(gdb) list timespec_cmp
+
+The source code for timespec_cmp is as follows:
+
+43  /* Return negative, zero, positive if A < B, A == B, A > B, respectively.
+44     Assume the nanosecond components are in range, or close to it.  */
+45  static inline int
+46  timespec_cmp (struct timespec a, struct timespec b)
+47  {
+48    int diff = a.tv_sec - b.tv_sec;
+49    return diff ? diff : a.tv_nsec - b.tv_nsec;
+50  }
+
+I set a breakpoint at timespec_cmp and looked at the local variables to see if
+diff or the return value was getting any funky results.
+
+(gdb) break timespec_cmp
+(gdb) info locals
+diff = 1
+
+The diff variable seemed to be set to a positive number, indicating that A > B.
+To test this, I inspected the frame and arguments (for a and b).
+
+(gdb) info frame
+(gdb) info args
+
+The output from info frame is as follows:
+
+(gdb) info frame
+Stack level 0, frame at 0x7fffffffddb0:
+ rip = 0x40216c in timespec_cmp (../lib/timespec.h:49); saved rip 0x405c4a
+ called by frame at 0x7fffffffde10
+ source language c.
+ Arglist at 0x7fffffffdda0, args: a=..., b=...
+ Locals at 0x7fffffffdda0, Previous frame's sp is 0x7fffffffddb0
+ Saved registers:
+  rbp at 0x7fffffffdda0, rip at 0x7fffffffdda8
+
+The output from info args is as follows:
+
+(gdb) info args
+a = {tv_sec = 1477373175, tv_nsec = 560881991}
+b = {tv_sec = 1477373174, tv_nsec = 558855374}
+
+I can then see that the arguments have some pretty funky numbers! While diff,
+a.tv_sec - b.tv_sec, is 1, which is right, I can see there could be overflow
+errors here, which would cause logic errors in the program. I decided to keep
+running the program to see how the program behaved when dealing with the
+wwi_armistice file.
+
+(gdb) continue
+Breakpoint 5, timespec_cmp (a=..., b=...) at ../lib/timespec.h:48
+(gdb) info locals
+diff = 0
+(gdb) n
+(gdb) info locals
+diff = -1203768121
+(gdb) info args
+a = {tv_sec = 1477373175, tv_nsec = 560881991}
+b = {tv_sec = -1613826000, tv_nsec = 0}
+
+In this case, I can clearly see that diff, which is supposed to be a.tv_sec -
+b.tv_sec, is the wrong value. Since diff is an int, it seems that the
+calculation overflowed, leading to a negative number when the numbers should sum
+to a large positive. This appears to be the root of the bug!
+
+To fix the source file for timespec.h, I went into the lib folder and made a
+duplicate of the original timespec.h.
+
+$ cd ~/coreutils-with-bug/lib
+$ cp timespec.h timespec_original.h
+
+I then edited the file and changed the logic to use conditional if statements
+instead of subtraction. Basically, if one is greater than the other the
+appropriately signed value is returned (I chose the arbitrary 1 for positive, -1
+for negative, and 0 was for when a == b). I also added a Changelog to the file.
+
+$ emacs timespec.h
+C-x C-s
+C-x 4 a
+
+Once I had fixed timespec.h, I created a patch file with the fixes. I did this
+using the diff -u command with the copy of the original file and the newly
+edited one. This diff was stored in lab5.diff.
+
+$ diff -u lib/timespec_original.h lib/timespec.h > lab5.diff
+
+To test whether or not the diff patch worked correctly, I made a new
+coreutils-with-bug from the .tar.gz and applied both the supplied patch to fix
+the compilation error and then lab5.diff to fix the logic error. I then built
+the program and tested it by going into $tmp and performing the ls -lt test.
+
+$ cd ~
+$ mv coreutils-with-bug coreutils-with-bug-old
+$ tar -xzf coreutils-with-bug.tar.gz
+$ cd coreutils-with-bug
+$ cp ../coreutils-with-bug-old/patch_file .
+$ cp ../coreutils-with-bug-old/lab5.diff .
+$ patch -p0 < patch_file
+$ patch -p0 < lab5.diff
+$ ./configure
+$ make
+
+The output from applying patch_file is as follows:
+
+[wijaya@lnxsrv07 ~/coreutils-with-bug]$ patch -p0 < patch_file
+patching file lib/utimens.c
+patching file lib/utimens.h
+patching file src/copy.c
+patching file src/tee.c
+patching file src/touch.c
+
+The output from applying lab5.diff is as follows:
+[wijaya@lnxsrv07 ~/coreutils-with-bug]$ patch -p0 < lab5.diff
+patching file lib/timespec.h
+
+The test was then performed:
+
+$ cd $tmp
+$ ~/coreutils-with-bug/src/ls -lt wwi-armistice now now1
+-rw-r--r-- 1 wijaya csugrad 0 2016-10-24 22:26 now1
+-rw-r--r-- 1 wijaya csugrad 0 2016-10-24 22:26 now
+-rw-r--r-- 1 wijaya csugrad 0 1918-11-11 03:00 wwi-armistice
+
+From the supplied output above, we can see that the files ordered correctly!
+The patch in lab5.diff clearly worked with the supplied test case. We then added
+a ChangLog entry into lab5.diff in the beginning of the diff in order to meet
+the requirements of the lab.
+
+I then attempted to reproduce the bug in my home directory on the SEASnet Linux
+servers, rather than in $tmp. I used the installed touch and ls utilities
+instead of those supplied by coreutils. The results of that test are as follows:
+
+$ ls -lt wwi-armistice now now1
+-rw-r--r-- 1 wijaya csugrad 0 Dec 17  2054 wwi-armistice
+-rw-r--r-- 1 wijaya csugrad 0 Oct 25 00:09 now1
+-rw-r--r-- 1 wijaya csugrad 0 Oct 25 00:09 now
+
+We can see that the year for wwi-armistice appears to be 2054 rather than 1918
+and the date is also incorrect, or not as expected. The SEASnet version of ls
+seemed to think that wwi-armistice was created in the future.
+
+This is due to timestamps being represented as seconds since the Unix Epoch.
+Which is in 1970. The SEASnet NFS filesystem has unsigned 32-bit time stamps.
+The Local File System on Linux has signed 32-bit time stamps. Thus, dates before
+this Epoch will have negative values. Since SEASnet uses unsigned time stamps,
+this sign bit will be interpreted as a positive value, causing the date to be
+shown as 2054 in the future rather than in the past as expected. To resolve this
+issue, we would have to touch the file on the local file system rather than on
+SEASnet.
+
+
