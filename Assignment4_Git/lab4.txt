@@ -1,0 +1,189 @@
+Assignment 4: Change Management - lab4.txt
+--------------------------------------------------------------------------------
+
+In order to make a copy of the Diffutils repository, I made the directory gitdir
+and then cloned the repository.
+
+mkdir gitdir
+cd gitdir
+git clone ~eggert/src/gnu/diffutils
+
+I then saved the log of changes with git log and saved it into git-log.txt. I
+also generated a list of tags using git tag and saved it into git-tags.txt.
+
+cd diffutils
+git log > ../git-log.txt
+git tag > ../git-tags.txt
+
+To find the commit entitled: “maint: quote 'like this' or "like this", not
+`like this'”, I used grep. I then used git show to get details on the commit
+and generated a patch for that commit usining git format-patch. By using git
+format-patch -1, I only got the patch for that commit.
+
+git log --grep "maint: quote"
+git show 62ca21c8c1a5aa3488589dcb191a4ef04ae9ed4f
+git format-patch -1 --stdout 62ca21c8c1a5aa3488589dcb191a4ef04ae9ed4f          \
+> quote-patch.txt
+
+I used git checkout to get version 3.0 of Diffutils.
+
+git checkout v3.0
+
+I then used patch -pnum to apply the quote-patch.txt from before. I pressed
+return to skip the files that the patch command could not find. Other than the
+files the command couldn't patch, there were no other problems.
+
+patch -p1 < quote-patch.txt
+
+I then checked what happened with git status, which resulted in the following
+output:
+
+git status
+
+Output from git staus:
+# HEAD detached at v3.0
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+# modified:   NEWS
+# modified:   README
+# modified:   TODO
+# modified:   doc/diagmeet.note
+# modified:   ms/config.bat
+# modified:   ms/config.site
+# modified:   po/en.po
+# modified:   src/analyze.c
+# modified:   src/cmp.c
+# modified:   src/context.c
+# modified:   src/diff.c
+# modified:   src/diff.h
+# modified:   src/diff3.c
+# modified:   src/dir.c
+# modified:   src/ifdef.c
+# modified:   src/io.c
+# modified:   src/sdiff.c
+# modified:   src/side.c
+# modified:   src/system.h
+# modified:   src/util.c
+# modified:   tests/help-version
+#
+# Untracked files:
+#   (use "git add <file>..." to include in what will be committed)
+#
+# NEWS.orig
+# README-hacking.orig
+# README-hacking.rej
+# README.orig
+# README.rej
+# cfg.mk.orig
+# cfg.mk.rej
+# ms/config.site.orig
+# quote-patch.txt
+# src/cmp.c.orig
+# src/context.c.orig
+# src/diff.c.orig
+# src/diff.c.rej
+# src/diff.h.orig
+# src/diff3.c.orig
+# src/diff3.c.rej
+# src/dir.c.orig
+# src/sdiff.c.orig
+# src/system.h.orig
+# src/util.c.orig
+# tests/help-version.orig
+no changes added to commit (use "git add" and/or "git commit -a")
+
+We can see that many files were modified, including those that were not source
+code files. Using Emacs, I utilized the vc-diff and vc-revert commands to revert
+changes to files other than .c files, and to undo changes in .c files that only
+affected the comments. In order to run emacs on all the modified non-source code
+files, I ran the following command:
+
+emacs NEWS; emacs README; emacs TODO; emacs doc/diagmeet.note;
+emacs ms/config.bat; emacs ms/config.site; emacs po/en.po;
+emacs src/diff.h; emacs src/system.h; emacs tests/help-version
+
+Then, within each emacs window, I reverted changes with C-x v u, confirmed with
+"yes", then exited with C-x C-c.
+
+I then ran the following command to revert any changes to comment hunks:
+
+emacs src/analyze.c; emacs src/cmp.c; emacs src/context.c; emacs src/diff.c;
+emacs src/diff3.c; emacs src/dir.c; emacs src/ifdef.c; emacs src/io.c;
+emacs src/sdiff.c; emacs src/side.c; emacs src/util.c
+
+Within each window, I used vc-diff C-x v = to open the vc-diff buffer and then
+reverted comment changes with C-u C-c C-a. This is the opposite of
+diff-apply-hunk (C-c C-a) which would apply the changes... this instead reverts
+the changes. I then exited with C-x C-c and saved.
+
+Using emacs, I examined *.c.rej and looked at the rejected patches. I copied
+the rejected patches into the corresponding .c files as needed. 5 times in
+diff.c I replaced ` with ' and I did that only once in diff3.c.
+
+emacs src/*.c.rej
+
+I then removed untracked files as listed in git status. To verify that I was
+removing the right files, I used the -n option with git clean. This option
+allows me to see what would be deleted with git clean -f, which forcibly
+deletes untracked files.
+
+git status
+git clean -f -n
+git clean -f
+git status
+
+The resulting output from git status showed 6 modified files. I then put the git
+diff into quote-3.0-patch.txt. That patch ended up being about 326 lines, which
+agrees with the spec.
+
+git diff > quote-3.0-patch.txt
+wc quote-3.0-patch.txt
+
+I then checked README-hacking and in order to build modified version of
+Diffutils I ran the following commands:
+
+./bootstrap
+./configure
+make
+make check
+
+I didn't run these commands on lnx07 or lnx09 so no extra patch was needed.
+
+To verify that my local diffutils does the right thing, I ran the following
+tests:
+
+./src/diff . -
+./src/diff --help
+
+The resulting error messages showed '-' rather than the previous `-', indicating
+that the patch was successful. In addition, we performed a sanity check to see
+whether our patch to the source code was similar to the current HEAD branch's
+source code.
+
+git clone ~eggert/src/gnu/diffutils diffutils-3.0
+cd diffutils-3.0
+git checkout v3.0
+cp -r diffutils diffutils-3.0-patch
+
+To only look at the source code, I copied the *.c files to a new directory.
+
+mkdir ./diffutils-3.0/source
+mkdir ./diffutils-3.0-patch/source
+cp diffutils-3.0/src/*.c diffutils-3.0/source
+cp diffutils-3.0-patch/src/*.c diffutils-3.0-patch/source
+./diffutils/src/diff -pru diffutils-3.0/source/ diffutils-3.0-patch/source     \
+> quote-3.0-test.txt
+
+I then compared the source files using the local version of diff. The results
+of the diff was stored in quote-3.0-test.txt. This file should be similar to
+quote-3.0-patch.txt, something we check by comparing the two with the native
+diff.
+
+cp diffutils/quote-3.0-patch.txt .
+diff quote-3.0-test.txt quote-3.0-patch.txt
+
+Two files are not identical, with many changes from ` to '. Many of these
+changes were in the strings in the code, not just in the comments. Therefore,
+these changes are not innocuous.

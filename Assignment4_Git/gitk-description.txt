@@ -1,0 +1,13 @@
+Assignment 4: Change Management - gitk-description.txt
+--------------------------------------------------------------------------------
+
+The top left window shows the repository structure such as the branches and
+commits and merges. It shows the HEAD and master branch. The associated names
+and emails are in the top middle section, with the dates of the commits in the
+top right.
+
+In the bottom section, there is more information about the commit shown. For
+instance, there is a bar allowing for searching through commits by hash, commit
+name, etc. In the bottom left, the ChangeLog for the commit is depicted, as well
+as the diff. To the right shows all the files that had been changed or modified
+in the commit.

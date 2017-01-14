@@ -1,0 +1,144 @@
+Assignment 4: Change Management - hw4.txt
+--------------------------------------------------------------------------------
+
+I checked out version 3.0 of Diffutils and branched into quote.
+
+cd diffutils
+git checkout v3.0 -b quote
+
+I then installed my patch into the quote branch with the patch command.
+
+patch -p1 < quote-3.0-patch.txt
+
+The resulting output was as follows:
+[wijaya@lnxsrv04 ~/4Asgn/gitdir/diffutils]$ patch -p1 <quote-3.0-patch.txt
+patching file src/cmp.c
+patching file src/diff.c
+patching file src/diff3.c
+patching file src/dir.c
+patching file src/sdiff.c
+patching file src/util.c
+
+We can see that the only 6 files that were modified were the 6 I modified for
+the patch.
+
+I then used the Emacs function add-change-log-entry-other-window (C-x 4 a) to
+create a ChangeLog for the 6 modifications I made in the patch.
+
+emacs
+C-x 4 a
+I entered all 6 files that were changed and added brief modification description
+        * src/cmp.c:    Replaced backtick quotes with an apostrophe
+        * src/diff.c:   Replaced backtick quotes with an apostrophe
+        * src/diff3.c:  Replaced backtick quotes with an apostrophe
+        * src/dir.c:    Replaced backtick quotes with an apostrophe
+        * src/sdiff.c:  Replaced backtick quotes with an apostrophe
+        * src/util.c:   Replaced backtick quotes with an apostrophe
+
+I then added and committed these changes and verified that it worked with git
+log. When I used git log, I saw my ChangeLog logged. The -F option takes a
+commit message from a given file.
+
+git add .
+git commit -F ChangeLog
+git log
+
+The output from the git commit command was as follows:
+[wijaya@lnxsrv04 ~/4Asgn/gitdir/diffutils]$ git commit -F ChangeLog
+[quote 0f166a7] 2016-10-19  Katrina Wijaya  <wijaya@lnxsrv04.seas.ucla.edu>
+ Committer: Katrina Alexis Wijaya <wijaya@lnxsrv04.seas.ucla.edu>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+If the identity used for this commit is wrong, you can fix it with:
+
+    git commit --amend --author='Your Name <you@example.com>'
+
+ 7 files changed, 369 insertions(+), 43 deletions(-)
+ create mode 100644 quote-3.0-patch.txt
+
+After I committed, I then created a formatted patch for other people to get my
+changes.
+
+git format-patch -1 --stdout > formatted-patch.txt
+
+I verified that my patch worked with a partner, Jennifer Cheng. We sent each
+other our formatted-path.txt files with scp, checked out a new branch, and
+tested it. The scp command was run from Jennifer's server.
+
+scp formatted-patch.txt wijaya@lnxsrv.seas.ucla.edu:~/gitdir/diffutils/
+
+git checkout v3.0 -b partner
+git am < formatted-patch.txt
+
+After running the git am command, we both received the following error:
+[wijaya@lnxsrv05 ~/4Asgn/gitdir/diffutils]$ git am < formatted-patch.txt
+previous rebase directory
+/u/cs/ugrad/wijaya/4Asgn/gitdir/diffutils/.git/rebase-apply
+still exists but mbox given.
+
+The solution was to run the following command and then run git am again, which
+succeeded.
+
+git am --abort
+git am < formatted-patch.txt
+
+I then tested her patch by remaking diffutils.
+
+./bootstrap
+./configure
+make
+make check
+
+I then verified her patch with the following commands:
+
+./src/diff . -
+./src/diff --help
+git log
+
+The resulting error messages showed '-' rather than the previous `-', indicating
+that the patch was successful. I also checked git log and saw her ChangeLog.
+
+I then switched back to my branch quote to verify that my ChangeLog entry
+worked. I ran the command make distdir and inspected the resulting
+diffutils*/Changelog file. This was in diffutils-3.0.1-0f16)
+
+make distdir
+cd diffutils*
+emacs ChangeLog
+
+Looking at the ChangeLog, I see my last Changelog addition.
+
+I then logged out and in to the linux server, and then went to the copy of the
+GNU Emacs git repository's master branch on SEASnet in the directory
+~eggert/src/gnu/emacs.
+
+ssh -X wijaya@lnxsrv.seas.ucla.edu
+cd ~eggert/src/gnu/emacs
+gitk
+
+When I ran gitk, I got the following error:
+
+Application initialization failed: no display name and no $DISPLAY environment
+variable
+Error in startup script: no display name and no $DISPLAY environment variable
+    while executing
+"load /usr/lib64/tk8.5/../libtk8.5.so Tk"
+    ("package ifneeded Tk 8.5.7" script)
+    invoked from within
+"package require Tk"
+    (file "/usr/local/cs/bin/gitk" line 10)
+
+I resolved this issue by downloading X11 from https://www.xquartz.org/ and
+restarting my computer. I then ran the same steps. I ran gitk on it, and found
+the newest merge that is newer than 2015-01-25. The screenshot can be found at
+gitk-screenshot.png and a description of the subwindows in the screenshot in
+gitk-description.txt.
+
+ssh -X wijaya@lnxsrv.seas.ucla.edu
+cd ~eggert/src/gnu/emacs
+gitk
