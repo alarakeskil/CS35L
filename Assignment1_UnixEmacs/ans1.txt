@@ -1,0 +1,114 @@
+1.  man man
+    man apropos
+    man -k ls
+    To print commands with <word> in their man page, use: man -k <word>
+2.  whereis cp
+    whereis wc
+    The cp program is located in /bin/cp and the wc program is in /usr/bin/wc
+3.  man -k executable
+    man find
+    find --help
+    find / -executable
+    find / -name '?' -executable
+    find /usr/bin -name '?' -executable
+    whatis w
+    whatis X
+    whatis [
+    w shows who is logged in and what they are doing.
+    X is a portable, network-transparent window system.
+    [ is a shell builtin command and an executable for conditional tests.
+4.  cd /usr/bin
+    ls -l
+      emacs -> /etc/alternatives/emacs
+    cd /etc/alternatives
+    ls -l
+      emacs -> /usr/bin/emacs-23.1
+    cd /usr/bin
+    ls -l
+    The emacs file that is actually executed is emacs-23.1 in /usr/bin
+5.  man chmod
+    info coreutils 'chmod invocation'
+    touch test.txt
+    ls -l
+    chmod g+s test.txt
+    ls -l
+    touch test2.txt
+    chmod +x test2.txt
+    ls -l
+    chmod o-x test2.txt
+    ls -l
+    For permissions, g+s gives special permissions by setgid. For an executable,
+    the permissions for the running file are based on owner/group of file rather
+    than user running it.
+    Chmod o-x removes executing permissions from "others".
+6.  man find
+    find -mtime 21
+    find -mtime +21
+    find -mtime -21
+    If -mtime, the find command looks for files modified in the last # days. If
+    +mtime, it looks for files modified before the last # days.
+7.  find -mtime -21 -type d
+    To see the same info but for directories, just add -type d to the #6 answer.
+8.  whereis find
+    cd /bin
+    ls
+    There are 20 symbolic links in /bin, which is the same directory find is in.
+9.  cd /usr/lib
+    ls -t
+    ls -lt
+    The oldeest file in /usr/lib is libgamin-1.so.0.1.10 from Mar 3, 2010.
+10. man locale
+    The locale command gets its data from environment variables like LC_CTYPE,
+    LC_COLLATE, LC_TIME, LC_NUMERIC, LC_MONETARY, and LC_MESSAGES.
+11. man emacs
+    emacs
+    C-h a
+    sort
+    C-x o
+    Commands in Emacs with sort are as follows: Buffer-menu-sort,
+    Buffer-menu-sort-by-column, ibuffer-invert-sorting,
+    ibuffer-toggle-sorting-mode, rmail-sort-by-author,
+    rmail-sort-by-correspondent, rmail-sort-by-date, rmail-sort-by-labels,
+    rmail-sort-by-lines, rmail-sort-by-recipient, rmail-sort-by-subject,
+    sort-columns, sort-fields, sort-lines, sort-numeric-fields, sort-pages,
+    sort-paragraphs, sort-regexp-fields
+12. man emacs
+    emacs
+    C-h r
+    *scroll down to Key Index*
+    Enter
+    * C-M-a: moves to the beginning of the current/preceding function
+    * C-M-b: Moves backwards by expressions
+    * C-M-c: Exit a recursive edit
+    * C-M-d: Move down in the parenthesis structure
+    * C-M-e: Moves to the end of the current/following function
+    * C-M-f: Move forwards by expressions
+    * C-M-g: A quit command like C-g.
+    * C-M-h: Marks the current or following function.
+13. emacs
+    C-h r
+    *scroll down to Key Index*
+    enter
+    *scroll down to C-g*
+    enter
+    C-g cancels a command before it has finished. It quits both a partially
+    typed command or one that is still running.
+14. emacs
+    C-h r
+    *scroll down to Key Index*
+    enter
+    *scroll down to Yanking*
+    enter
+    Yanking recovers killed text. It is for moving text, like pasting.
+15. cd /usr/bin
+    emacs
+    C-x d
+    C-x C-c
+    ls -l
+    man ls
+    ls -la
+    The ls -l command prints everything in the current directory in the long
+    format unless the entry starts with '.', or is a hidden file. ls -la matches
+    the dired command by printing everything in long format.
+    The dired command prints everything in a directory. It is "read-only" and is
+    as extensive as ls -la, and shows all files unlike ls -l.
