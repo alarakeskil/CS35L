@@ -1,0 +1,68 @@
+Assignment 6: System Call Programming and Debugging - sfrob.txt
+--------------------------------------------------------------------------------
+
+In the homework portion of Assignment 6, we rewrote the sfrob.c program from
+Assignment 5 to use system calls (read/write) rather than getchar/putchar. After
+rewriting it into sfrobu.c, which uses unbuffered system calls, we compared the
+performances of the original sfrob.c and new sfrobu.c.
+
+In sfrobu.c we used qsort() (like quicksort), which has a run time of O(nlogn).
+We can calculate the expected number of comparisons using nlogn. We ran the
+sfrobu.c on varying number of input lines and got the following number of
+comparisons:
+
+$ ./sfrobu < input.txt > results.txt
+Comparisons: #
+
+Input Lines     # of comparisons    Expected # of Comparisons
+-------------------------------------------------------------
+5               7                   12
+10              19                  33
+25              84                  116
+50              224                 282
+100             538                 664
+250             1685                1991
+500             3852                4483
+1000            8699                9966
+5000            55139               61439
+50000           716176              780482
+
+As we can see from the table above, the number of comparisons sfrobu.c performed
+is closely related to the expected number of comparisons for an nlogn algorithm.
+Thus, the number of comparisons as a function of the number of input lines is
+c(n) = n*log(n) using log base 2.
+
+We can also compare the time performance of sfrob, sfrobu, and sfrobs. Using the
+time command we received the following output when copying the results to
+another file:
+
+$ time ./sfrob < large.txt > results.txt
+
+real  0m0.017s
+user  0m0.000s
+sys   0m0.001s
+
+$ time ./sfrobu < large.txt > results.txt
+Comparisons: 254505
+
+real  0m6.037s
+user  0m0.277s
+sys   0m5.694s
+
+$ time ./sfrobs < large.txt > results.txt
+
+real  0m0.098s
+user  0m0.024s
+sys   0m0.024s
+
+We can see that sfrob, which uses buffered I/O (getchar/putchar) runs much
+faster than sfrobu. Sfrobu uses unbuffered I/O with system calls read/write.
+This means that for every byte there are at least two system calls to read and
+write it, which causes the sys time of the program to be much greater than that
+of sfrob (around 5700x slower).
+
+When we run the time command on sfrobs, the shell script takes much less time
+than sfrobu, but still more than sfrob. Since it doesn't use unbuffered I/O, the
+longer runtime could be due to linux's use of mergesort rather than quicksort.
+Quicksort requires less additional space than mergesort, which can lead to a
+faster runtime.

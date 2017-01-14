@@ -1,0 +1,119 @@
+Assignment 6: System Call Programming and Debugging - lab.txt
+--------------------------------------------------------------------------------
+
+In lab 6, we implemented transliteration programs (tr) with buffered and
+unbuffered I/O. The C program tr2b.c used buffered I/O  with getchar/putchar
+while tr2u.c used unbuffered I/O with read/write.
+
+Both programs had to do several error checks to make sure that the input passed
+in was appropriate, i.e. that there was the correct number of arguments, the
+"from" input did not have duplicate bytes, and "from" and "to" inputs were of
+the same length. This aspect of both programs was identical.
+
+After performing error checks, I created an array of 256 chars and filled them
+with the values of their indexes. Since there are 256 ASCII chars, this means
+that at index 65, I would get the value 65, which is the decimal representation
+of the ASCII char 'A'. I then iterated through the "from" input and replaced
+every "from" char in the array with the corresponding "to" char. This means that
+when I try to access a char in the array that used to map to a char in the
+"from" input, I instead get one from the "to" input. For tr2b.c, using getchar,
+I get the next byte from input and putchar the char at that value in the array.
+After creating my ASCII map, while the input was not EOF, I used putchar to
+print the appropriate char. For tr2u.c, I used write and read system calls to
+read in and write the chars. Since read returns either the number of bytes read
+or 0 and -1 for EOF and an error, respectively, while the return of read was
+positive tr2u.c wrote the appropriate char from the map. Thus, the
+"transliteration" was achieved.
+
+To compile and run the programs tr2b.c and tr2u.c, I performed the following
+commmands:
+
+$ gcc tr2b.c -o tr2b
+$ gcc tr2u.c -o tr2u
+$ ./tr2b 'ABC' 'XYZ' <input.txt
+$ ./tr2u 'ABC' 'XYZ' <input.txt
+
+If I were to compare the outputs of both programs I would expect identical
+outputs. I tested this with the following:
+
+$ ./tr2b 'ABC' 'XYZ' <input.txt >b.txt
+$ ./tr2u 'ABC' 'XYZ' <input.txt >u.txt
+$ diff b.txt u.txt -s
+Files b.txt and u.txt are identical
+
+I then created a large file for further comparison. In order to generate a file
+with at least 5,000,000 bytes, I performed the following command:
+
+$ head --bytes=5000000  /dev/urandom > large.txt
+
+Using the strace command, I compared the system calls issued by tr2b and tr2u
+under two situations: a) when copying one file to another b) when copying a file
+to my terminal.
+
+When copying one file to another, we can carry out the following commands. As a
+sanity check, they also make sure the copies are identical. The word counts show
+how many system calls were issued by both programs.
+
+$ strace -o strace_output_b ./tr2b 'ABC' 'XYZ' <large.txt >copy_b.txt
+$ strace -o strace_output_u ./tr2u 'ABC' 'XYZ' <large.txt >copy_u.txt
+$ diff copy_b.txt copy_u.txt  -s
+Files copy_b.txt and copy_u.txt are identical
+$ cat strace_output_b | wc -l
+184
+$ cat strace_output_u | wc -l
+10000026
+
+We can see that tr2b had much fewer system calls while tr2u had around
+10,000,000. This could be expected, since for every char input it does an
+output, which is 2 system calls per input (with an input file of 5,000,000).
+
+When copying a file to my terminal, we carry out the following commands:
+
+$ strace -o strace_output_b1 ./tr2b 'ABC' 'XYZ' <large.txt
+$ strace -o strace_output_u1 ./tr2u 'ABC' 'XYZ' <large.txt
+$ cat strace_output_b1 | wc -l
+20155
+$ cat strace_output_u1 | wc -l
+10000026
+
+We can see that tr2u has the same number of system calls while tr2b has much
+more this time. This is because tr2b now has to print on the terminal screen,
+resulting in the greater magnitude of system calls.
+
+Using the time command, we can measure how much faster one program is compared
+to the other. Using the same situations as before (copying a file to another or
+to terminal) we can measure the speed/efficiency of the programs.
+
+$ time ./tr2b 'ABC' 'XYZ' <large.txt >copy_bt.txt
+real  0m0.270s
+user  0m0.196s
+sys   0m0.007s
+
+$ time ./tr2u 'ABC' 'XYZ' <large.txt >copy_ut.txt
+real  0m7.055s
+user  0m0.342s
+sys   0m6.648
+
+$ diff copy_bt.txt copy_ut.txt  -s
+Files copy_bt.txt and copy_ut.txt are identical
+
+$ time ./tr2b 'ABC' 'XYZ' <large.txt
+real  0m0.865s
+user  0m0.131s
+sys   0m0.069s
+
+$ time ./tr2u 'ABC' 'XYZ' <large.txt
+real  0m6.313s
+user  0m0.397s
+sys   0m5.867s
+
+From these time results, it is clear to see that unbuffered I/O is significantly
+slower than buffered I/O. The stats we are concerned about are the "sys" times.
+This is the CPU time used by the system for our process. Getchar and putchar are
+much faster than read and write since there are less syscalls required. Copying
+to another file is faster than copying to terminal since printing to stdout
+requires more syscalls (as shown with strace), slowing down the program. When
+copying to another file, unbuffered I/O took about ~950 times longer. When
+copying to terminal, unbuffered I/O took about ~85 times longer. Thus, it would
+be best to use a buffer with I/O as it will reduce the number of syscalls and
+runtime.
