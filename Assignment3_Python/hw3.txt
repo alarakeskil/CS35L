@@ -1,0 +1,30 @@
+Assignment 3 - Modifying and Rewriting Software - hw3.txt
+-------------------------------------------------------------------------------
+Q1) Brady's patch removed the line "case_long_iso_time_stye:" and put case
+long_iso_time_style in its place which maintained the switch statement. The
+patch also removed the inside of the for loop that had a goto
+case_long_iso_time_style, making the removal unnecessary as it would never be
+called. By removing the inside of the loop with the goto, the default will
+always be the English-speaking Unix format.
+
+Q2) This patched version of coreutils introduces problems with users in foreign
+countries where the English-formatted dates would not be easily understood. It
+would cause inconsistencies with other date formats according to the locale of
+foreign countries since only the traditional English-speaking Unix format would
+be used.
+
+Q3) If randline.py is invoked on an empty file like /dev/null, it will return
+the following error: IndexError: list index out of range. This is because the
+file is empty and the list would have a size of 0, meaning any attempt to access
+even index 0 will be out of range, and thus cause an IndexError. The function
+that raises the error is random.choice(seq), which returns a random element of
+the sequence seq. However, because there are no elements to access and the seq
+is empty, the error is raised.
+
+Q4) If the script is run with Python 3 rather than Python 2, the following error
+occurs: except IOError as (errno, strerror): SyntaxError: invalid syntax. This
+is because the line has incorrect syntax and should actually be "except IOError
+as err;". Python 3 doesn't allow iteration over exceptions like Python 2 does.
+By removing this feature, the Python code becomes more explicit and
+understandable.
+

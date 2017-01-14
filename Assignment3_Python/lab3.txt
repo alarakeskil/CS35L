@@ -1,0 +1,85 @@
+Assignment 3 - Modifying and Rewriting Software - lab3.txt
+-------------------------------------------------------------------------------
+To download coreutils-7.6.tar.gz, we use the following wget command:
+
+wget ftp://ftp.gnu.org/gnu/coreutils/coreutils-7.6.tar.gz
+
+After downloading it, we can untar the .tar.gz:
+
+tar -xzvf coreutils-7.6.tar.gz
+
+This will create the directory coreutils-7.6 in the home directory, or wherever
+you downloaded the .tar.gz to. Then create the coreutilsInstall folder:
+
+mkdir coreutilInstall
+
+Enter the coreutils-7.6 directory and run the configure command so that it will
+be installed in ~/coreutilsInstall:
+
+./configure --prefix=/u/cs/ugrad/wijaya/coreutilsInstall
+
+Then make, and make install in order to actually install coreutils according to
+the makefile:
+
+make
+make install
+
+If you change directories to ~/coreutilsInstall, there will now be three
+directories. coreutilsInstall/bin contains the binary ls file. In order to test
+whether or not the bug can be replicated, we change the locale to "en_US.UTF-8"
+with the following command:
+
+export LC_ALL='en_US.UTF-8'
+
+Then, try the default ls command (installed in /usr/bin) and then the installed
+coreutils ls command:
+
+ls -l
+./ls -l
+
+The latter command, ./ls -l, runs the binary ls contained in the current
+directory (coreutilsInstall/bin). It does not display the traditional Unix
+format with output like 2009-03-02 rather than Mar 2 2009.
+
+To fix this, change back to ~/coreutils-7.6 and create a patch_file from
+http://lists.gnu.org/archive/html/bug-coreutils/2009-09/msg00410.html. Run the
+patch with the following command:
+
+patch -p1 < patch_file
+
+The -p1 option strips one of the leading slashes from each file name in the
+patch_file. For example, a/src/ls.c becomes src/ls.c. I then used the `make`
+command in coreutils-7.6 to recompile relevant files affected by the patch.
+
+make
+
+We don't want to reinstall it elsewhere, so we just need make. I then created
+two test files to see whether the patch worked on both a recent file and one
+over a year old:
+
+touch -t 201401210959.30 katrina
+touch wijaya
+
+I ran the buggy ls version from coreutilsInstall and the newly compiled version
+to verify that the patch worked. The patched version showed the correct
+traditional Unix format:
+
+../coreutilsInstall/bin/ls -l
+./src/ls -l
+
+Both commands were run from ~/coreutils-7.6. The latter command ran the patched
+ls command in coreutils-7.6 while the prior one ran the buggy one that was
+installed by default with coreutils-7.6 in coreutilsInstall. The outputs of the
+commands with the buggy ls and patched ls are as follows (respectively):
+
+2014-01-21 09:59 katrina
+2016-10-10 23:26 wijaya
+
+Jan 21  2014 katrina
+Oct 10 23:26 wijaya
+
+From the output, we can see that the patched output follows the traditional Unix
+format while the buggy one does not. We can see with the new file (wijaya) and
+old file (katrina) that for the new one the time last modified is displayed
+while for the file that is older than a year the year it was last modified is
+displayed.
