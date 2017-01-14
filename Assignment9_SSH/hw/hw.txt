@@ -1,0 +1,35 @@
+Assignment 9: SSH Setup and Use in Applications - hw.txt
+--------------------------------------------------------------------------------
+
+1. If another team had been observing the bytes across the network, the network
+would still be secure. The data transferred would have been encrypted with the
+public key before being sent over the network, and the private key is never
+passed over the network and thus would never be available to the observing team
+to decrypt the data bytes.
+
+If the keyboard was tapped and another team could observe our keystrokes, then
+there is a risk of unsecure networks. When we ssh into a host, we generally type
+in the authentication private key password, which can be used to decrypt the
+data. However, if we had disabled password authentication after key generation,
+and this was not the first time logging in (which would have required entering
+the password), then they would still lack access to the private key to decrypt
+the data.
+
+In the event that the other team has our physical USB, then they would have our
+private key as they would have access to our .ssh folders containing our keys.
+Unless access was somehow restricted to these folders, the other team would be
+able to encrypt/decrypt using our keys at will.
+
+2. The gpg --verify command doesn't truly verify that the tar file was created
+by me because the command doesn't check that you personally created tar file
+because it only verifies the integrity of the signature, aka that the public key
+and signature go along with each other. If the data had been intercepted between
+the true sender and receiver, and modified and signed with a different public
+key, then the verification would work, but would be faulty since what the
+original sender sent has been modified.
+
+A solution to this would be to have a trusted 3rd party source such as a
+company/organization to verify who created whatever file(s). As long as the 3rd
+party can be trusted, then the verification/tracking of the original
+owner/sender can be trusted.
+

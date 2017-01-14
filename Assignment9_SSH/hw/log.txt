@@ -1,0 +1,151 @@
+Assignment 9: SSH Setup and Use in Applications - log.txt
+--------------------------------------------------------------------------------
+
+In Assignment 9, we used openssh to connect to other hosts. To set this up, we
+used the supplied Ubuntu operating system and made sure that both openssh-server
+and openssh-client were installed. To do so, we performed the following
+commands. In order to successfully install openssh-server, which was missing, we
+had to update apt-get.
+
+$ dpkg --get-selections | grep openssh
+openssh-client        install
+
+$ sudo apt-get install openssh-server
+// Approved use of additional disk space
+
+$ sudo apt-get update
+
+$ sudo apt-get install openssh-server
+
+$ dpkg --get-selections | grep openssh
+openssh-server        install
+openssh-client        install
+openssh-sftp-server   install
+
+Now that we had both openssh-server and openssh-client, I paired up with my
+partner Jennifer Cheng (also from Lab 3).
+
+----- SERVER -----
+
+I started from the server side by generating public and private keys with the
+command `ssh-keygen`. These keys were stored in /home/ubuntu/.ssh, or the
+directory .ssh within my home directory.
+
+$ ssh-keygen
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/ubuntu/.ssh/id_rsa):
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /home/ubuntu/.ssh/id_rsa.
+Your public key has been saved in /home/ubuntu/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:DqsltSC0KWFFjCF5tSX4PZQoYwX/eH3mnzVLdConv2k ubuntu@ubuntu
+The key's randomart image is:
++---[RSA 2048]----+
+|.o*B+...         |
+|o.Bo.+o          |
+|.+.+oo           |
+|.o o.oo.         |
+|. + o =.S o   . .|
+| . . + = +   . o |
+|    . + . . o *  |
+|     +     . OE+ |
+|    .       o.=. |
++----[SHA256]-----+
+
+I then created an account on the server for the client, my partner, with the
+command `sudo useradd -d /home/<directory> -m <username>`. I used the username
+"mars" and made their home directory "marsthepom". I also set the new user's
+password and created a .ssh directory with the right permissions using the
+command `sudo passwd <username>` and `sudo mkdir .ssh`. Using chown and chmod,
+we can set the owner of a file/directory and change access restrictions. The
+`-R` option on chown changes the user ID and/or the group ID for the file
+hierarchies rooted in the files and not just the files themselves.
+
+$ sudo useradd -d /home/marsthepom -m mars
+$ sudo passwd mars
+Enter new UNIX password:
+Retype new UNIX password:
+passwd: password updated successfully
+
+// Create .ssh directory for new user
+$ cd /home/marsthepom/
+$ sudo mkdir .ssh
+
+// Change ownership and permission on .ssh directory
+$ sudo chown-R mars .ssh
+$ sudo chmod 700 .ssh
+
+// Disable password-based authentication, change PasswordAuthentication to "no"
+$ emacs /etc/ssh/sshd_config
+// Emacs not installed
+$ sudo nano /etc/ssh/
+
+In order to determine my IP address for the ssh command host, I used ifconfig
+and found that the IP is 10.97.85.120
+
+$ ifconfig
+
+With this, my role on the server side is done and she is able to securely
+login/connect to the newly-created user on my host.
+
+----- CLIENT -----
+
+Now, as the client, I generate public and private keys again. This time, I copy
+the public key to the server so the server can encrypt the messages it sends to
+me (which I can then decrypt using my private key). The keys were still stored
+in /home/ubuntu/.ssh, with the public key in ~/.ssh/id_rsa.pub.
+
+$ ssh-keygen
+
+I then copy my public key to the server for key-based authentication using the
+command `ssh-copy-id -i username@server_ip_addr`
+
+
+// Used the username and IP address from my partner who set up the server on her side
+$ ssh-copy-id -i katrina@10.97.85.134
+/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/home/ubuntu/.ssh/id_rsa.pub"
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+katrina@10.97.85.134's password:
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   "ssh 'katrina@10.97.85.134'"
+and check to make sure that only the key(s) you wanted were added.
+
+
+After adding the password, I added the private key to the authentication agent
+and sshed into the user on my partner's host using the commands `ssh-add` and
+then `ssh username@server_ip_addr`/
+
+$ ssh-add
+Identity added: /home/ubuntu/.ssh/id_rsa (/home/ubuntu/.ssh/id_rsa)
+
+$ ssh katrina@10.97.85.134
+Welcome to Ubuntu 15.10 (GNU/Linux 4.2.0-16-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com/
+
+I didn't have to enter a password since we disabled password authentication. I
+also used port forwarding with the -X option to enable X11 session forwarding.
+This allows me to run a command on a remote host that displays on my host.
+
+$ ssh -X katrina@10.97.85.134
+Welcome to Ubuntu 15.10 (GNU/Linux 4.2.0-16-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com/
+
+
+Last login: Mon Nov 21 15:31:23 2016 from 10.97.85.120
+
+If I now run a command on the remote host, I now get windows that open on my
+host. For example, xterm opened a shell on my host, gedit opened a text editor,
+and a Firefox window opened on my host after executing the following commands.
+
+ $ xterm
+ $ gedit
+ $ firefox
+
+Thus, we have successfully set up/configured the clients/servers so my partner
+and I could connect to the other's host.
