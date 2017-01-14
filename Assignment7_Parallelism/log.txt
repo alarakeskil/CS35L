@@ -1,0 +1,89 @@
+Assignment 7: Multithreaded Performance - log.txt
+--------------------------------------------------------------------------------
+
+In lab 7, we tested sort with the --parallel option to see the pros/cons of a
+varying number of threads.
+
+We generated a file with 10,000,000 random double-precision floating point
+numbers, with one per line, in order to have a large file to test parallelizing
+sort on. To begin, we looked at the od command and its options and then
+processed the output of od using sed and tr.
+
+$ od --help
+$ od -An -tf -N 16 < /dev/urandom
+$ od -An -tf -N 80000000 < /dev/urandom | tr -s ' ' '\n' |                    \
+                                          sed '1{/^$/d}' > floats.txt
+
+The options to od remove the addresses (-An), only output doubles of 8 bytes
+(-tf), and sets the number of bytes to get (-N <count>). We use tr to replace
+all spaces with newlines, squeezing consecutive spaces into only one newline.
+Since there could be spaces in the beginning of the output, we use sed to delete
+the first line, only if it is empty, using sed and a regex expression. The
+resulting processed output is then stored in floats.txt, which we verify has
+10,000,000 lines or 10,000,000 floats (one per line).
+
+$ wc -l floats.txt
+10000000 floats.txt
+
+After we get our input to test with floats.txt, we check the version of the sort
+command (after adding to our $PATH), to make sure it is a new-enough version
+(after 8.6).
+
+$ sort --version
+  sort (GNU coreutils) 8.25
+  Copyright (C) 2016 Free Software Foundation, Inc.
+  License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+  This is free software: you are free to change and redistribute it.
+  There is NO WARRANTY, to the extent permitted by law.
+
+  Written by Mike Haertel and Paul Eggert.
+
+We can see from the output that the version is 8.25 which is more recent than
+8.6 and thus is new-enough for our purposes. Using floats.txt, we can now time
+the sort command and send the output to /dev/null. Using the option -p for time
+uses the portable output format. Using the -g option for sort makes it do a
+general-numeric-sort, or compare according to general numerical value.
+
+$ man time
+$ sort --help
+$ time -p sort -g floats.txt > /dev/null
+real 36.17
+user 194.65
+sys 0.52
+
+We can see from the time command above the time results for just running the
+sort command without parallelization. To run it with parallelization, we use the
+option --parallel=N with N being the number of threads that are running sort
+concurrently. We then run the sort command with 1, 2, 4, and 8 threads.
+
+$ sort --help
+$ time -p sort -g --parallel=1 floats.txt > /dev/null
+real 190.90
+user 190.62
+sys 0.27
+
+$ time -p sort -g --parallel=2 floats.txt > /dev/null
+real 100.45
+user 192.25
+sys 0.36
+
+$ time -p sort -g --parallel=4 floats.txt > /dev/null
+real 55.87
+user 192.23
+sys 0.36
+
+$ time -p sort -g --parallel=8 floats.txt > /dev/null
+real 35.18
+user 194.16
+sys 0.47
+
+From the results, we can see that for all the processes the user time (CPU time
+used by the process) seems roughly the same across all the different
+parallelizations. Sys time (CPU time used by the system on behalf of the
+process) seems to increase very slightly, which could be due to an increase in
+system calls due to more threads and having to switch between them. The real
+time differs greatly, and we can see that just running the sort command without
+parallelizations seems to have a similar real run time as a parallelization with
+8 threads. This leads us to the possibility that the default sort could be
+multithreaded with around 8 threads which would result in the similar runtimes
+we see.
